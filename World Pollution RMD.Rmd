@@ -1,0 +1,648 @@
+---
+output:
+  bookdown::pdf_book:
+    fig_caption: yes
+    number_sections: no
+    toc: no
+geometry: margin=1in
+header-includes: 
+  \usepackage{mdwlist} 
+  \usepackage[compact]{titlesec} 
+  \titlespacing{\section}{0pt}{0ex}{0ex}
+  \usepackage{titling} 
+  \usepackage[font=small,labelfont=bf,tableposition=top]{caption}
+  \usepackage{lastpage}
+   \usepackage{hyperref} 
+   \usepackage{colortbl}
+    \usepackage{array}
+  \hypersetup{backref,colorlinks=true} 
+  \usepackage{framed,xcolor} 
+  \definecolor{shadecolor}{rgb}{0.95, 0.93, 0.9} 
+  \usepackage{graphicx} 
+  \usepackage{booktabs} 
+  \renewcommand\arraystretch{1.5}
+  \usepackage{fancyhdr} 
+  \usepackage[none]{hyphenat} 
+  \raggedright 
+  \usepackage{amsmath,amsthm, amssymb, bm} 
+  \usepackage{marginnote} 
+  \usepackage{subfig} 
+  \def\mygraphcaption{Here
+  are my graphs.} 
+  \newlength{\mygraphwidth}\setlength{\mygraphwidth}{0.9\textwidth}
+  \usepackage{enumitem} 
+  \newcommand\itemonestar{\stepcounter{enumi}\item[$^\bigstar$\,\theenumi.]} 
+  \newcommand\itemtwostars{\stepcounter{enumi}\item[$^{\bigstar\bigstarast}$\,\theenumi.]} 
+  \usepackage{listings} 
+  \usepackage{wrapfig}
+   \usepackage{lipsum}
+   \usepackage{longtable}
+fontsize: 12pt
+subparagraph: yes
+biblio-style: jabes
+---
+\lstset{
+	basicstyle=\small\ttfamily,
+	columns=flexible,
+	breaklines=true}
+	
+  \pagestyle{fancy}
+  \fancyhead[L]{\textbf{Mark Chintis}}
+  \fancyhead[C]{}
+  \fancyhead[R]{\textbf{STAT 823 Project}}
+  \fancyfoot[L]{}
+  \fancyfoot[C]{}
+  \fancyfoot[R]{Page -\thepage- of \pageref{LastPage}}
+  \fancypagestyle{plain}{\pagestyle{fancy}}
+  \renewcommand{\headrulewidth}{2pt}
+  \renewcommand{\footrulewidth}{2pt}
+ 
+ \hypersetup{
+	colorlinks   = true,
+	citecolor    = blue,
+	linkcolor    = black,
+	urlcolor     = blue
+  }
+  
+  \begin{titlepage}
+   \begin{center}
+       \vspace*{2cm}
+        
+       \vspace{0.5cm}
+ 
+       \textbf{\textit{\LARGE World Pollution}}
+ 
+       \vspace{0.5cm}
+      
+       \textbf{\Large STAT 823: Summer Class Project, 2019} 
+       
+        \vspace{0.5cm}
+        
+        \textbf{\large Mark Chintis}
+        
+       \vfill
+ 
+       \vspace{0.7cm}
+ 
+       \includegraphics[width=0.4\textwidth]{figures/ku}
+ 
+       \large Department of Biostatistics and Data Science \\
+       University of Kansas, USA \\
+       `r format(Sys.time(), '%B %e, %Y')`
+ 
+   \end{center}
+\end{titlepage}
+
+```{r setup, include=FALSE, appendix = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(knitr)
+library(epiDisplay)
+library(leaps)
+library(psych)
+library(tools)
+library(car)
+library(rgl)
+library(scatterplot3d)
+library(captioner)
+library(kableExtra)
+library(asbio)
+library(car)
+library(faraway)
+library(reshape2)
+library(tidyverse)
+library(dplyr)
+library(lmtest)
+
+```
+ 
+ \setlength{\headheight}{45pt}
+ 
+\thispagestyle{empty}
+\newpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+\pagestyle{plain}
+\tableofcontents
+\cleardoublepage
+\phantomsection
+\listoftables
+\phantomsection
+\listoffigures
+\newpage
+\pagenumbering{arabic}
+
+\section{Abstract}
+
+Pollution around the world is generally measured by carbon dioxide levels in the atmosphere. The data in this report take a differing approach and measure carbon dioxide emissions per capita. The amount of renewable energy countries produce and consume play a seemingly important role in such emissions. Intuition tells us that as renewable energy consumption increases, carbon dioxide emission will decrease. We would like to be able to determine to what extent of the carbon dioxide per capita is explained by the renewable energy consumption using a linear model. Ninety-three countries were included in a  linear regression model and the renewable energy consumption is shown to explain 73\% of the variation in the carbon dioxide emission with a p-value < .05. The results are lackluster as we determine that even a transformation of the response variable cannot make linear model residual assumptions hold true. 
+
+
+\newpage
+
+#I. Introduction
+When one thinks about the world's pollution, he or she probably often thinks about non-renewable energy use and consumption. But what if we could flip that idea and instead measure the world's renewable energy consumption? Would we see that the world's pollution would be significantly linearly dependent on such consumption? Will it reveal intuitive results? This report investigates exactly these linear relationships to identity if any correlation and/or association is present. 
+
+## A. Study Design. 
+In a joint effort of data collection, World Bank, Sustainable Energy for All (SE4ALL) database from the SE4ALL Global Tracking Framework led jointly by the World Bank, International Energy Agency, and the Energy Sector Management Assistance Program collaborated to provide the renewable energy consumption for over 200 countries globally. These data are measured as a percent of total final energy consumption for their respective country. 
+
+In a separate project, the Carbon Dioxide Information Analysis Center, Environmental Sciences Division, and Oak Ridge National Laboratory collected data on a similar number of countries' carbon dioxide emissions. These data are measured in metric tons per capita. 
+Data included in this report from both data sets are reduced to years 1990 to 2014. For the purposes of this analysis only complete cases are considered.
+
+To build our final data set, the aforementioned data are joined and cleaned to include only data from the following countries: Argentina, Bolivia, Brazil, Chile, Columbia, Ecuador, Peru, Venezuela, Portugal, Germany, Greece, Ukraine, Sweden, Finland, Ireland, Czech Republic, Italy, France, Austria, Belarus, Hungary, Bulgaria, Latvia, Poland, Romania, United Kingdom, Spain, Portugal, Estonia,Denmark, Switzerland, Albania, Norway, Netherlands, Algeria, Libya, Egypt, Chad, Niger, Mali, Mauritania, Guinea, Liberia, Senegal, Ghana, Benin, Nigeria, Cameroon, South Sudan, Ethiopia, Somalia, Kenya, Gabon, Angola, Zambia, Zimbabwe, Tanzania, Mozambique, Botswana, Namibia, South Africa, United States, Canada, Mexico, Guatemala, Belize, Nicaragua, Costa Rica, Panama, Cuba, Jamaica, Dominican Republic, China, India, Japan, Vietnam, Cambodia, Thailand, Myanmar, Nepal, Bhutan, Mongolia, Afghanistan, Kazakhstan, Turkmenistan, Pakistan, Iraq, Turkey, Uzbekistan, Saudi Arabia, Oman, Jordan, Tajikistan. For reasons unknown, noteable countries not included in either data set and thus not in the data set for this report are: Iran, Yemen, South Korea, North Korea, Russia, Kyrgyzstan, Sudan. 
+  
+
+
+```{r data, echo = F, message = F, appendix = TRUE}
+#Load data and wrangle
+pollution = read.csv(".../Pollution_Zip/data/Pollution.csv")
+
+renewable = read.csv(".../Pollution_zip/data/Renewable.csv")
+
+colnames(pollution)[1] = "Country"
+colnames(renewable)[1] = "Country"
+
+poll_m = melt(pollution, id.vars = "Country")
+
+renew_m = melt(renewable, id.vars = "Country")
+
+renew_m %>% 
+  full_join(poll_m, by = c("Country","variable")) ->
+  dat
+
+names(dat) = c("Country","Year","Renewable","Pollution")
+
+# SOUTH AMERICA 
+dat_suramerica = dat[dat$Country %in% c("Argentina","Bolivia","Brazil",
+                                        "Chile","Columbia","Ecuador",
+                                        "Peru","Venezuela, RB"),]
+#8 
+#EUROPE 
+dat_euro = dat[dat$Country %in% c("Portugal","Germany","Greece","Ukraine",
+                       "Sweden","Finland","Ireland","Czech Republic",
+                       "Italy","France","Austria","Belarus","Hungary",
+                       "Bulgaria","Latvia","Poland","Romania","United Kingdom",
+                       "Spain","Portugal","Estonia","Denmark",
+                       "Switzerland","Albania","Norway","Netherlands"),]
+#26 
+# AFRICA 
+dat_africa = dat[dat$Country %in% c("Algeria","Libya","Egypt","Chad","Niger",
+                       "Mali","Mauritania","Guinea","Liberia","Senegal",
+                       "Ghana","Benin","Nigeria","Cameroon","South Sudan",
+                       "Ethiopia","Somalia","Kenya","Gabon","Angola",
+                       "Zambia","Zimbabwe","Tanzania","Mozambique",
+                       "Botswana","Namibia","South Africa","Egypt, Arab Rep."),]
+
+#27
+# NORTH AMERICA 
+dat_norteAmerica=dat[dat$Country %in% c("United States","Canada"),]
+
+#2
+#CENTRAL AMERICA 
+dat_centralAmerica = dat[dat$Country %in% c(
+  "Mexico","Guatemala","Belize","Nicaragua",
+  "Costa Rica","Panama"),]
+
+#6
+# CARIBBEAN 
+dat_caribbean = dat[dat$Country %in% c("Cuba","Jamaica","Dominican Republic"),]
+
+#3
+# ASIA 
+dat_asia = dat[dat$Country %in% c("China","India","Japan","Vietnam","Cambodia",
+                                  "Thailand","Myanmar","Nepal","Bhutan",
+                                  "Mongolia"),]
+
+#10
+# MIDDLE EAST
+dat_midEast = dat[dat$Country %in% c("Afghanistan","Kazakhstan","Turkmenistan",
+                                     "Pakistan","Iraq","Turkey","Uzbekistan",
+                                     "Saudi Arabia","Oman","Jordan",
+                                     "Tajikistan"),]
+
+dat_total = rbind(dat_africa,
+                    dat_asia,
+                    dat_caribbean,
+                    dat_centralAmerica,
+                    dat_euro,
+                    dat_midEast,
+                    dat_norteAmerica,
+                    dat_suramerica)
+
+dat_total = dat_total[complete.cases(dat_total),]
+
+names(dat_total) <- c("Country","X2","X1","Y")
+
+attach(dat_total)
+knitr::kable(head(dat_total, n = 5),"latex", booktabs = T, row.names = F,
+             caption = "World Pollution", longtable = T) %>%
+  kable_styling(latex_options = c("repeat_header","striped"), font_size = 10)
+
+```
+
+## B. Aims. 
+
+This report aims to prove the intuitive notion that as renewable energy consumption increases, carbon dioxide emmision globally decreases. Using data from 93 countries, a linear relationship is sought out and the strength of the relationship is explored. 
+
+## C. Statistical Model.
+
+A multiple regression model is considered in this study. Let \newline
+
+$Y_i$ = Pollution (metric tons per capita)  \newline
+$X_{1i}$= Renewable energy consumption (percent of total energy consumption) \newline
+$X_{2i}$= Year, measured from 1990 to 2016 \newline
+
+The initial model is given by
+\[Y_i = \beta_0 + \beta_1X_{1i} + \beta_2X_{2i} + \varepsilon_i\]
+
+where \(\varepsilon_i \sim iidN(0,\sigma^2)\), \(i = 1, 2, . . . , 2639\), and \(\beta_0, \beta_1, \beta_2\) and \(\sigma^2\) are the unknown model parameters.
+
+
+#II. Preliminary Analyses.
+
+## A. Bivariate Associations.
+
+Figure \@ref(fig:cormatrix) in [Appendix B2](#AppB2) gives a scatterplot matrix used to indicate any linear association between all variables. Pearson coefficients are overlaid on the scatterplot matrix for convenience. We see from the scatterplots and the Pearson coefficients that there are no multicollinearity issues to be addressed at this point.
+
+## B. Screening of Covariates and Verification of Assumptions
+
+From the results of automatic variable selection methods shown in [Appendix B3](#AppB3) along with criterion-based statistics, $X_2$ is excluded.
+
+## C. Final Model
+
+The final model is given by
+
+\[Y_i = \beta_0 + \beta_1X_{1i} + \varepsilon_i\]
+
+where \(\varepsilon_i \sim iidN(0,\sigma^2)\), \(i = 1, 2, . . . , 2639\), and \(\beta_0, \beta_1\) and \(\sigma^2\) are the unknown model parameters.
+
+#III. Statistical Analysis.
+
+## A. Variable Selection/Model Reduction
+
+Through automatic variable selection techniques described in [Appendix B3](#AppB3), two models are considered for hypothesis testing and validation. The full model for the hypothesis tests is given by \[Y_i = \beta_0 + \beta_1X_{1i} +  \beta_2X_{2i} + \varepsilon_i.\] The reduced model is given by \[Y_i = \beta_0 + \beta_1X_{1i} + \varepsilon_i.\] We wish to test the following hypotheses:
+\begin{center}
+\begin{eqnarray*}
+H_0: & \beta_1 = 0 \\
+H_1: & \beta_1 \neq 0.
+\end{eqnarray*}
+\end{center}
+
+```{r anova_variable_select, message = F, echo = F, appendix = F}
+names(dat_total) <- c("Country","X2","X1","Y")
+m_full <- lm(Y~X1+X2, data = dat_total)
+m_red <- lm(Y~X1, data = dat_total)
+a_comp <- anova(m_red,m_full)
+```
+
+The general linear test approach, shown in [Appendix B5](#AppB5) gives the decision rule to reject the null hypothesis that $\beta_1 = 0$, if $F^* = \frac{SSE_R-SSE_F}{df_R - df_F} \div \frac{SSE_F}{df_F} > F_{.95,1,2216}$.  Since $F^* =$ `r round(a_comp$F[2],3)` < $F_{.95,1,2216} = `r round(qf(.95,1,2216),3)`$, we fail to reject the null hypothesis that $\beta_1 =0$, thus we conclude that the incorporating the variable $X_2$ into the model is unnecessary. Leading us to use the model of that of the reduced model \[Y_i = \beta_0 + \beta_1X_{1i} + \varepsilon_i.\]
+
+```{r , message = F, echo = F, appendix = F}
+m_final <- lm(Y~X1, data = dat_total)
+s1 = summary(m_final)
+
+```
+
+The fitted model is given by $\hat{Y}$ = `r round(summary(m_final)$coef[1],3)` `r round(summary(m_final)$coef[2],3)`$*X_1$. The rate of decrease of pollution is, on average, `r round(summary(m_final)$coef[2],3)` (95% CI `r round(confint(m_final)[2,],3)`) for every one percent increase in renewable energy consumption. From this model, the percent of renewable energy consumption explains `r round(s1$r.squared,3)*100`\% of the variation in global pollution.
+
+## B. Transformations.
+From the residual analysis shown in [Appendix C](#AppC), we find it necessary to transform the response variable, Pollution. We use the transformation by raising the Pollution variable to the one tenth power ($Y_i^{\frac{1}{10}}$). This will be our final model. This transformation is shown in [Appendix C2](#AppC2).
+
+## C. Final Model.
+By consideration of variable selection and variable transformations, the final model of $$Y_i^{\frac{1}{10}} = \beta_0 + \beta_1X_{1i} + \epsilon_i. $$ The R summary of this model is shown in [Appendix D](#AppD). 
+
+```{r final_model, message = F, echo = F, appendix = F}
+fit_final = lm((dat_total$Y)^(1/10)~dat_total$X1)
+s_final = summary(fit_final)
+```
+
+In the final model, the rate of decrease of the square root of pollution is, on average, `r round(s_final$coef[2],3)` (95% CI `r round(confint(fit_final)[2,],3)`) for every one percent increase in renewable energy consumption. From this model, the percent of renewable energy consumption explains `r round(s_final$r.squared,3)*100`\% of the variation in global pollution.
+
+```{r valid, message = F, echo=F, appendix = F}
+
+set.seed(32)
+val <- as.list(sample(1:2218,35))
+
+proj_valid<-dat_total[unlist(val),]
+
+lm_valid <- lm(Y^(1/10)~X1,data = proj_valid)
+#summary(lm_valid)
+a_valid <- anova(lm_valid)
+
+a_final <- anova(lm(Y^(1/10)~X1, data = dat_total))
+
+```
+
+To validate the predition capability of our final model, a random sample of 35 observations from the project data set are chosen to comprise a validation set. The observed mean square prediction error $MSPE =$ `r round(a_valid$'Mean Sq'[2],3)` ([Appendix D](#AppD)). This is very close to the $MSE =$ `r round(a_final$'Mean Sq'[2],3)`, therefore giving an appropriate, unbiased indication of the predictive ability of the model.  
+
+Since our final model is a simple linear regression model with only one predictor, Figure \@ref(fig:finplot) can accurately display the relationship between our model and the data. 
+
+#IV. Summary of Findings.
+
+The final model provides us with a quite strong correlation and negative association between our predictor variable, percentage of renewable energy consumption and carbon dioxide emissions, seen in Figure \@ref(fig:finplot). This confers with the intuitive notion that the greater percentage of renewable energy consumed, the less carbon dioxide emission. Unfortunately, our model fails to pass the normality assumptions, leading to further question the appropriateness of a linear model at all and pushes towards other regression models, such as an exponential model.  
+
+```{r finplot, out.height="60%",out.width="60%", echo = F, message = F, warning = F, fig.cap="Scatterplot and Least-Square Regression Line of Pollution Data", fig.align='center'}
+
+ggplot(dat_total, aes(x = X1, y = (Y)^(1/10)))+
+  geom_point()+
+  geom_abline(intercept = fit_final$coefficients[1],slope = fit_final$coefficients[2], col = "red")+
+  xlab("Renewable Energy Consumption")+
+  ylab(expression(Pollution^{1/10}))+
+  ggtitle("Plot and Linear Regression Line of Pollution Data")
+```
+
+#V. Conclusion
+
+Although intuitive, a linear regression model seems to not be the most appropriate model for this data. There are so many other factors that could be introduced to the model. One such factor is population density of the measurement area of CO2 emissions. Given more time and resources, these factors should be explored to better understand the variation of CO2 emission around the globe. 
+
+\newpage
+
+#V. Appendix
+## A. Diagnostics of Predictors
+
+Boxplots, histograms, and a summary of each predictor variable are provided in Figure \@ref(fig:box1), Figure \@ref(fig:hist1), and Figure \@ref(fig:bar1), respectively. 
+
+```{r box1, echo = F, message = F, out.height="50%",out.width="50%", fig.align='center', fig.cap = "Boxplot of Renewable Energy Variable", appendix = TRUE}
+# Boxplot of Renewable Predictor (X1)
+ggplot(dat_total, aes(x = "", y = X1))+
+  geom_boxplot()+
+  xlab("")+
+  ylab("% Renewable Energy Consumption")+
+  ggtitle("Box Plot of Global Renewable Energy Consumption")
+
+```
+
+```{r hist1, echo = F, message = F, out.height="50%",out.width="50%", fig.align='center', fig.cap = "Histogram of Renewable Energy Variable", appendix = TRUE}
+# Histogram of renewable energy variable, x1
+ggplot(dat_total, aes(x = X1))+
+  geom_histogram(binwidth = 20, color = "blue", fill = "lightgray")+
+  theme_bw()+
+  xlab("% Renewable Energy Consumption")+
+  ylab("Frequency")+
+  ggtitle("Histogram of Global Renewable Energy Consumption")
+```
+
+
+```{r bar1, echo = F, message = F, out.height="50%",out.width="50%", fig.align='center', fig.cap="Frequency Bar Chart of Year Variable", appendix = TRUE}
+#Frequency of year variable
+plot(dat_total$X2, xlab = "Year", ylab = "Frequency",
+     main = "Frequency Bar Chart of Year")
+```
+
+We see that the predictor, renewable energy consumption is highly skewed left. This is likely explained by the number of countries with very little renewable energy production or availability in general. This should not impact the analysis as there are not immediate recognizable outliers.
+
+## B. Screening of Predictors
+
+### 1. Added Variable Plots {#AppB1}
+
+Below are added variable plots for each variable. From these plots we can begin to establish that the "Year" variable does not add much value since the slope of the linear relationship with the outcome is nearly zero. On the other hand, the "Renewable" variable look to have stong linear associations. 
+
+```{r avplot, message = F, echo = F, out.height="50%",out.width="50%", fig.align='center', appendix = TRUE}
+# Added variable plots
+names(dat_total) <- c("Country","X2","X1","Y")
+attach(dat_total)
+
+m1 <- lm(Y~X1+X2) 
+
+par(mfrow=c(1,2))
+
+for(i in (1:2)){
+ prplot(m1,i)
+}
+
+```
+
+### 2. Multicollinearity {#AppB2}
+
+Multicollinearity is addressed with the scatterplot matrix and Pearson coefficients table shown below. It indicates very little multicollinearity in among the variables. 
+```{r cormatrix, echo=FALSE, message = F,fig.align='center', out.width="50%", out.height="50%", fig.cap="Correlation Matrix and Pearson Correlation Coefficients", appendix = TRUE}
+#Correlation matrix
+par(mfrow=c(1,1))
+
+pairs.panels(dat_total[-1], density = F, ellipses = F)
+
+```
+
+### 3. Variable Selection {#AppB3}
+
+Automatic variable selection is used to begin the elimination process of variables, especially those with high multicollinearity. No variables are forced to stay in or out of the model. The results are shown in the R output below. In separate plots of all of the criteria, \(R^2_{adj}\), Bayes Information Criterion (BIC), and Mallow's \(C_p\) statistic are also prepared below.
+
+```{r, echo = F, message = F, fig.align='center', warning = F, appendix = TRUE,fig.pos = "H"}
+# Automatic Variable Selection
+avs <- regsubsets(Y~X1 + X2, data = dat_total)
+sum_avs <- summary(avs)
+
+a = round(cbind(sum_avs$adjr2,sum_avs$cp, sum_avs$bic), 3)
+colnames(a) = c("AdjustedR2","Cp","BIC")
+
+kable(a,"latex", booktabs = T, row.names = F, 
+      caption = "Automatic Variable Selection Criteria", longtable = T) %>%
+  kable_styling(latex_options = c("repeat_header","striped"), font_size = 10)
+```
+
+
+```{r cp, echo = F, message = F, out.height="50%", out.width = "50%", fig.cap = "Cp variable Selection", appendix = TRUE, fig.align='center',fig.pos = "H"}
+#Cp plot
+cp_min <- which.min(sum_avs$cp)
+
+par(mfrow=c(1,1))
+plot(1:8, sum_avs$cp, type = "b", ylab = expression(C[p]), lwd=3, 
+     xlab = "Number of Parameters")
+points(cp_min, sum_avs$cp[cp_min], col = "red", cex = 2, pch = 20)
+plot(avs, scale="Cp")
+
+```
+
+```{r bic, echo = F, message = F,fig.align='center', out.height="50%", out.width = "50%", fig.cap="BIC variable Selection", appendix = TRUE,fig.pos = "H"}
+#for BIC
+BIC_min <- which.min(sum_avs$bic)
+
+par(mfrow=c(1,1))
+plot(1:8, sum_avs$bic, type = "b", ylab = expression(BIC), lwd=3, 
+     xlab = "Number of Parameters")
+points(BIC_min, sum_avs$bic[BIC_min], col = "red", cex = 2, pch = 20)
+plot(avs, scale="bic")
+
+```
+
+```{r adjr, echo = F, message = F, out.height="50%", out.width = "50%", fig.cap="R squared adjusted variable Selection", appendix = TRUE,fig.align='center', fig.pos = "H"}
+#for R^2 adj
+r2adj_max <- which.max(sum_avs$adjr2)
+
+par(mfrow=c(1,1))
+plot(1:8, sum_avs$adjr2, type = "b", 
+     ylab = expression(R^2[adj]), lwd=3, xlab = "Number of Parameters")
+points(r2adj_max, sum_avs$adjr2[r2adj_max], col = "red", cex = 2, pch = 20)
+plot(avs, scale="adjr2")
+par(mfrow=c(1,1))
+```
+
+With the best number of parameters highlighted in red in each plot, we determine that the model with only the "Renewable" variable, X1, to be included in the final model. 
+
+### 4. Variable Inflation Factors {#AppB4}  
+
+Variable inflation factors are shown for the model $Y_i = \beta_0 + \beta_1X_{i1} + \beta_2X_{i2}$ in the R output below. Since each inflation factor is less than the rule of thumb of 10, none present any immediate issues.
+
+```{r vif2, message = F, echo = F, appendix = TRUE,fig.align='center',fig.pos = "H"}
+# Variable inflation factors
+m2 <- lm(Y~X1+X2)
+vif(m2)
+```
+
+### 5. Model Reduction {#AppB5}
+
+```{r anova_variable_select2, message = F, echo = F, appendix = F, appendix = TRUE}
+# Model reduction and ANOVA
+names(dat_total) <- c("Country","X2","X1","Y")
+m_full <- lm(Y~X1+X2, data = dat_total)
+m_red <- lm(Y~X1, data = dat_total)
+a_comp <- anova(m_red,m_full)
+
+m_final <- lm(Y~X1, data = dat_total)
+s1 = summary(m_final)
+```
+
+```{r finalmodel, message = F, echo = F, appendix = TRUE}
+s1
+anova(m_final)
+confint(m_final)
+
+```
+
+## C. Residual Diagnostics {#AppC}
+
+### 1. Outliers {#AppC1}
+
+Potentially influential points are identified using Cook's distances and plotted with a half-normal plot. These unusually large or small values are shown in Figure \@ref(fig:halfnorm) below and values of observations 1621 and 1571 are extracted, respectively. 
+
+```{r halfnorm, echo = F, message = F, fig.cap = "Cook's Distance in Half Normal Plot", out.width="50%", out.height="50%",appendix = TRUE,fig.align='center',fig.pos = "H"}
+# Outliers with cooks distance
+halfnorm(cooks.distance(fit_final))
+
+```
+
+
+```{r, echo = F, message = F, appendix = TRUE}
+#Display outliers
+dat_total[c(387,361),]
+```
+
+A fit of the model without observations 387 and 361 shows that our model is not changed drastically with the removal of these two points. Therfore, they will remain included in the final model. 
+
+```{r, message = F, echo = F, appendix = TRUE}
+# Model testing without outliers
+dat_test <- dat_total[-c(361,387),]
+lm_test <- lm(Y^(1/10)~X1, data = dat_test)
+summary(lm_test)
+
+```
+
+Figure \@ref(fig:studentized1) shows the Studentized deleted residuals plotted against the expected values to validate the normality assumption. We can see that the residuals are heavily fanned. This suggests a transformation is in order.  
+
+```{r studentized1, echo = F, message = F, fig.cap = "Studentized Residuals vs. Predicted Pollution Values", out.width="50%", out.height="50%", appendix = TRUE,fig.align='center',fig.pos = "H"}
+# Residual plot
+fit_untrans = lm(dat_total$Y~dat_total$X1)
+plot(rstandard(fit_untrans)~predict(fit_untrans), 
+     xlab = expression(hat(Y)), ylab = "Studentized Deleted Residuals")
+abline(h=0, col = "red")
+
+```
+
+### 2. Normality Assumption {#AppC2}
+
+Similarly, the normality assumption of residuals is explored in Figure \@ref(fig:qqnorm1) shows that the assumption is violated, again suggesting a transformation. In addition, we use the Shapiro-Wilks test to formally determine normality. With a p-value < 0.05, we reject the hypothesis that the data are normally distributed. 
+
+```{r qqnorm1, echo =F, message = F, fig.cap = "Q-Q Plot for Residuals of Untransformed Linear Model", out.width="50%", out.height="50%", appendix = TRUE,fig.align='center',fig.pos = "H"}
+#Normality with shapiro wilks
+shapiro.test(residuals(fit_untrans))
+shapiro.qqnorm(residuals(fit_untrans))
+```
+
+To determine the proper transformation, the boxcox() function in R is used. The results are shown in Figure \@ref(fig:boxcox). With the highest likelihood of obtaining the lowest SSE coming at a $\lambda$ value of approximately 0.1, we will transform the response variable, Y (Pollution), by raising it to the 0.1 power. 
+
+```{r boxcox, message = F, echo = F, fig.cap = "Box Cox Results", warning=F, out.width="50%", out.height="50%", appendix = TRUE,fig.align='center',fig.pos = "H"}
+#Box Cox Transformation analysis
+b <- boxcox(fit_untrans)
+lambda <- b$lambda # lambda values
+
+lik <- b$objective # log likelihood values for SSE
+#class(lik)
+bc <- cbind(lambda, lik) # combine lambda and lik
+```
+
+With this transformation, we now observe the studentized residual plot and QQ-Plot in Figure \@ref(fig:studentized2) Figure \@ref(fig:qqnorm2), respectively. This transformation appears to provide a much more constant, normal distribution of residuals. However, with the Shapiro-Wilks test we again reject the hypothesis that the residuals are normal. 
+
+```{r studentized2, message= F, echo =F, fig.cap = "Studentized Residual Plot for Transformed Model", out.width="50%", out.height="50%", appendix = TRUE,fig.align='center',fig.pos = "H"}
+#model fit with transformation
+fit_trans = lm((dat_total$Y)^(.1)~dat_total$X1)
+plot(rstandard(fit_trans)~predict(fit_trans), xlab = expression(hat(Y)), 
+     ylab = "Studentized Deleted Residuals")
+abline(h=0, col = "red")
+
+```
+
+```{r qqnorm2, message = F, echo = F, fig.cap = "Q-Q Plot for Residuals of Transformed Linear Model", out.width="50%", out.height="50%", appendix = TRUE,fig.align='center',fig.pos = "H"}
+#normality with transformed model
+shapiro.qqnorm(residuals(fit_trans))
+```
+
+### 3. Homoscedastity Assumption {#AppC3}
+
+To check for any any heteroscedastity, plots of the residuals vs. fitted values, and the standardized residuals vs. fitted values were plotted, Figure \@ref(fig:homoscedastity). Since there is a slight downward trend among the standardized residuals and the fitted values, we use the Breusch-Pagan test for a quantifiable result. Since the p-value of the this test is 0.0003 < 0.05, we reject the null hypothesis that the variance of the residuals is constant. Therefore the homoscedastity assumption is not met with our transformed model.
+
+```{r homoscedastity, out.width = "50%", out.height="50%", fig.cap = 'Residual Plots for Homoscedastity Validation',warning = F, message = F, echo = F,appendix = TRUE, fig.align='center',fig.pos = "H"}
+# plots for homoscedastity
+par(mfrow=c(1,2))
+plot(fit_trans, which = c(1,3))
+
+```
+
+```{r bptest, warning = F, message = F, echo = F,appendix = TRUE}
+# Breusch-Pagan test for homoscedastity
+bptest(fit_trans)
+```
+
+## D. Final Model {#AppD}
+
+### 1. Final Model Fit
+```{r final_model2, message = F, echo = F, appendix = TRUE}
+#final model fit
+fit_final = lm((dat_total$Y)^(1/10)~dat_total$X1)
+(s_final = summary(fit_final))
+```
+
+### 2. Model validation
+
+```{r valid2, message = F, echo=F, appendix = TRUE}
+#model validation
+set.seed(32)
+val <- as.list(sample(1:2218,35))
+
+proj_valid<-dat_total[unlist(val),]
+
+lm_valid <- lm(Y^(1/10)~X1,data = proj_valid)
+summary(lm_valid)
+(a_valid <- anova(lm_valid))
+
+a_final <- anova(lm(Y^(1/10)~X1, data = dat_total))
+
+```
+
+### 3. Model Visualization
+
+```{r finplot2, out.height="60%",out.width="60%", echo = F, message = F, warning = F, fig.cap="Scatterplot and Least-Square Regression Line of Pollution Data", fig.align='center', appendix = TRUE,fig.pos = "H"}
+#Model visualization
+ggplot(dat_total, aes(x = X1, y = (Y)^(1/10)))+
+  geom_point()+
+  geom_abline(intercept = fit_final$coefficients[1],
+              slope = fit_final$coefficients[2], col = "red")+
+  xlab("Renewable Energy Consumption")+
+  ylab(expression(Pollution^{1/10}))+
+  ggtitle("Plot and Linear Regression Line of Pollution Data")
+```
+
+\newpage 
+
+## E. Code
+
+```{r ref.label=knitr::all_labels(appendix == TRUE), eval = F}
+```
